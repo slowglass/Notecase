@@ -1,0 +1,135 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Notecase : Retardite App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css" />
+    <link rel="stylesheet" href="vendor/waves/waves.min.css" />
+    <link rel="stylesheet" href="vendor/wow/animate.css" />
+    <link rel="stylesheet" href="css/nativedroid2.css" />
+    <link rel="stylesheet" href="css/simplemde.min.css" />
+    <style>
+        /* Prevent FOUC */
+        body { opacity: 0; }
+    </style>
+</head>
+<body>
+
+<div id="selector0" data-role="page">
+    <div data-role="header" data-position="fixed">
+        <a href="#sel0-ctrl" class="ui-btn ui-btn-right" ><i class="zmdi zmdi-more-vert"></i></a>
+        <a href="#" class="ui-btn-right ui-disabled nc-download" style="right: 60px; opacity 0"><i class="zmdi zmdi-cloud-download"></i></a>
+        <h1></h1>
+    </div>
+    <div role="main" class="ui-content" data-inset="false" >
+         <ul class="listview" data-role="listview"></ul>
+    </div>
+    <div data-role="panel" id="sel0-ctrl" class="ui-bottom-sheet" data-animate="false" data-position='bottom' data-display="overlay">
+        <div class='row around-xs'>
+            <div class='col-xs-auto'>
+                <a href='#' class='ui-bottom-sheet-link ui-btn ui-btn-inline waves-effect waves-button waves-effect waves-button nc-new-note' data-ajax='false'>
+                    <i class='zmdi zmdi-file-add zmd-2x'></i><strong>New</strong>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="selector1" data-role="page">
+    <div data-role="header" data-position="fixed">
+        <a href="#sel1-ctrl" class="ui-btn ui-btn-right" ><i class="zmdi zmdi-more-vert"></i></a>
+        <a href="#" class="ui-btn-right ui-disabled nc-download" style="right: 60px; opacity 0"><i class="zmdi zmdi-cloud-download"></i></a>
+        <h1></h1>
+    </div>
+    <div role="main" class="ui-content" data-inset="false" >
+        <ul class="listview" data-role="listview" />
+    </div>
+
+    <div data-role="panel" id="sel1-ctrl" class="ui-bottom-sheet" data-animate="false" data-position='bottom' data-display="overlay">
+        <div class='row around-xs'>
+            <div class='col-xs-auto'>
+                <a href='#' class='ui-bottom-sheet-link ui-btn ui-btn-inline waves-effect waves-button waves-effect waves-button nc-new-note' data-ajax='false'>
+                    <i class='zmdi zmdi-file-add zmd-2x'></i><strong>New</strong>
+                </a>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<div id="noteview" data-role="page">
+    <div data-role="header" data-position="fixed">
+        <a href="#note-ctrl" class="ui-btn ui-btn-right" ><i class="zmdi zmdi-more-vert"></i></a>
+        <h1></h1>
+    </div>
+    <div role="main" class="ui-content" data-inset="false" >
+        <div class="nc-note-view" ></div>
+        <div class="nc-note-edit" >
+            <form>
+                <textarea name="edit" id="noteview-edit"></textarea>
+            </form>
+        </div>
+    </div>
+
+    <div data-role="panel" id="note-ctrl" class="ui-bottom-sheet" data-animate="false" data-position='bottom' data-display="overlay">
+        <div class='row around-xs'>
+            <div class='col-xs-auto'>
+                <a href='#' id="note-edit" class='ui-bottom-sheet-link ui-btn ui-btn-inline waves-effect waves-button waves-effect waves-button' data-ajax='false'>
+                    <i class='zmdi zmdi-edit zmd-2x'></i><strong>Edit</strong>
+                </a>
+            </div>
+            <div class='col-xs-auto'>
+                <a href='#' id="note-view" class='ui-bottom-sheet-link ui-btn ui-btn-inline waves-effect waves-button waves-effect waves-button ui-disabled' data-ajax='false'>
+                    <i class='zmdi zmdi-eye zmd-2x'></i><strong>View</strong>
+                </a>
+            </div>
+            <div class='col-xs-auto'>
+                <a href='#' id="note-upload" class='ui-bottom-sheet-link ui-btn ui-btn-inline waves-effect waves-button waves-effect waves-button ui-disabled' data-ajax='false'>
+                    <i class='zmdi zmdi-cloud-upload zmd-2x'></i><strong>Upload</strong>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="credits" data-role="page">
+    <div data-role="header" data-position="fixed">
+        <h1>Notecase : Retardite App</h1>
+    </div>
+    <div>
+        <p><strong>Author:</strong> Chris Davies</p>
+    </div>
+</div>
+
+<div data-role="page" id="new-note" >
+    <div data-role="header">
+        <h1 class='nd-title'>Add new note to Notecase</h1>
+    </div>
+    <div data-role="content">
+        <form>
+            <label for="new-note-name">Note Name:</label>
+            <input type="text" name="new-note-name" id="new-note-name" value="" data-clear-btn="true">
+        </form>
+        <a href="dialog/index.html" data-rel="back" data-role="button" data-inline="true" class="ui-btn ui-btn-primary nc-ok"><i class='zmdi zmdi-check'></i>Create</a>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.4.3/showdown.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js"></script>
+<script src="vendor/waves/waves.min.js"></script>
+<script src="vendor/wow/wow.min.js"></script>
+<script src="js/nativedroid2.js"></script>
+<script src="nd2settings.js"></script>
+<script src="cordova.js"></script>
+<script src="js/simplemde.min.js"></script>
+<script src="js/misc.js"></script>
+<script src="js/slowglass-convertor.js"></script>
+<script src="js/notes-store.js"></script>
+<script src="js/selector-ctrl.js"></script>
+<script src="js/noteview-ctrl.js"></script>
+<script src="js/notecase.js"></script>
+</body>
+</html>
