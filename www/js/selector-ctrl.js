@@ -3,8 +3,9 @@ var SelectorCtrl = function(notecase) {
 	this.notecase = notecase;
 }
 
+SelectorCtrl.uuid=101;
+
 SelectorCtrl.prototype = {
-    uuid: 0,
     currentPage: null,
     currentPath: "",
 	changePage: function(selector, path, title) {
@@ -51,24 +52,32 @@ SelectorCtrl.prototype = {
         $.mobile.changePage( "#error-dialog", { role: "dialog" } );
     },
 
-	onNewNoteCreate: function() {
-    	let note = { }
-    	var p = Utils.denormalisePath(this.currentPath);
-	    var title = $("#new-note-name").val();
-	    note.name = title + ".md";
-	    this.path_display = p + "/" + note.name;
-        this.path_lower = this.path_display.toLowerCase();
-        if (this.notecase.getByPath(this.currentPath,note.name) != null)
-            return error(null, "Create New Note", "Note already exists");
+	onNewNoteCreate: function(event) {
+        if (event != undefined) event.preventDefault();
 
-        note.id = this.uuid++;
-        note.status="new";
-	    note.path_display = p + "/" + note.name;
-	    note.path_lower = note.path_display.toLowerCase();
-        note.uuid++;
-        note[".tag"] = "file";
-        this.notecase.addNote(note);
+        let md = { };
+        var p = this.currentPath;
+        var title = $("#new-note-name").val();
+        md.name = title + ".md";
+        md.path_display = p + "/" + md.name;
+        md.path_lower = md.path_display.toLowerCase();
+        if (this.notecase.getByPath(md.path_lower) != null)
+        {
+            if (event != undefined) $("#new-note").dialog("close");
+            return this.error(null, "Create New Note", "Note already exists");
+        }
+
+        md.id = "NEW:"+SelectorCtrl.uuid++;
+        md.rev = NoteMetadata.NO_REV;
+        md.cache_status = NoteMetadata.NEW;
+        md.cache_integrity = true;
+        md[".tag"] = "file";
         this.notecase.fillList(this.currentPage, this.currentPath);
-        this.notecase.setContent(note, "new", "# " + title +"\n");
+        this.notecase.addNote(md);
+
+        this.notecase.putInCache(md.path_lower, "# " + title +"\n", md.rev, true);
+        this.notecase.changeNoteStatus(md.path_lower, NoteMetadata.NEW, true);
+
+        if (event != undefined) $("#new-note").dialog("close");
 	}
 }

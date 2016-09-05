@@ -29,14 +29,28 @@
 */
 
 var Notecase = function() {
+    this.root = { name: "", path_display: "", path_lower: "", tag: "folder" }
 	this.token= "3wsLXh8GbvUAAAAAAAAUagzM6j17BZJjTrQXMewcgI5vVD-vR-kA02sMSe7m9CYd";
 	this.debug= "";
 	this.cursor= null;
-	this.notesStore= new NotesStore();
+	this.notesStore= new NoteMetadata(new NoteCache());
 	this.attributes= new Map();
 }
 
 Notecase.prototype = {
+    _make_listentry: function(lv, selector, key, name) {
+        let md = this.notesStore.get_metadata(key);
+        if (md == undefined) md=this.root;
+        let li=$("<li class='bf-selector' />");
+        lv.append(li);
+        $(li).append(
+            '<a href="#" data-direction="reverse">'+
+            '<h2>'+name+'</h2>'+
+            '</a>');
+        li.find("a")
+            .data("note", md)
+            .data("selector", (selector+1)%2);
+    },
 	errorCallback: function() { alert("Cannot get data"); },
 
 	processFiles: function(data) {
@@ -44,33 +58,32 @@ Notecase.prototype = {
 		// Error on has_more at the moment.
 		if (data.has_more) alert("Error files bigger than intial download");
 
-		cursor = data.cursor;
+		this.cursor = data.cursor;
 		$.each(data.entries, function(i,v) {
-			$$.addNote(v);
+		    if ()
+		    if (v[".tag"] == "deleted")
+		       $$.removeNote(v);
+		    else
+		       $$.addNote(v);
 		});
+
+        localStorage.setItem("NODE_STORE", this.notesStore.serialise());
+		localStorage.setItem("CURSOR", JSON.stringify(this.cursor));
 	},
 
 	fillList: function(selector, key) {
 		var $$=this;
 		var lv=$("#selector" + selector +" .listview");
 		var items;
-		if (key=="") key="$ROOT";
-		items = $$.notesStore.getByFolder(key);
+		items = $$.notesStore.get_folder_contents(key);
 		lv.html("");
+		if (key != "")
+		    this._make_listentry(lv, selector, Utils.dirname(key), "Parent Folder");
 		$.each(items, function(i,v) {
-		   let li=$("<li class='bf-selector' />");
-		   lv.append(li);
-		   let name=v.name;
-
-		   if (v.tag != "folder")
-		   		name = Utils.basename(v.name);
-		   $(li).append(
-			'<a href="#" data-direction="reverse">'+
-			'<h2>'+name +'</h2>'+
-			'</a>');
-			li.find("a")
-				.data("note", v)
-				.data("selector", (selector+1)%2);
+		   let name = (v.tag != "folder")
+		    ? (Utils.basename(v.name) +  ((v.cache_integrity ? "" : " [CONFLICT]")))
+		    : v.name
+		   $$._make_listentry(lv, selector, v.path_lower, name);
 		});
 		lv.listview('refresh');
 	},
@@ -91,26 +104,22 @@ Notecase.prototype = {
 		});
 	},
 
-	put: function(note, successCB, errorCB) {
+	put: function(path, data, rev, successCB, errorCB) {
 		var $$=this;
-		var encodedData = new TextEncoder("utf-8").encode(note.data);
-		var params;
+		var encodedData = new TextEncoder("utf-8").encode(data);
+		var params = {
+            "path": path,
+            "autorename": true
+        };
 
-		 if (note.rev == undefined)
-		    params = {
-                "path": note.path_lower,
-                "mode": "add",
-                "autorename": true
-            };
+		 if (rev == NoteMetadata.NO_REV)
+		    params.mode = "add";
 		 else
-		    params = {
-                "path": note.path_lower,
-                "mode": {
-                    ".tag": "update",
-                    "update": note.rev
-                },
-                "autorename": true
+		    params.mode = {
+		        ".tag": "update",
+		        "update": rev
             };
+
 		if (errorCB==null) errorCB=this.errorCallback;
 		$.ajax({
 			url: "https://content.dropboxapi.com/2/files/upload",
@@ -139,7 +148,26 @@ Notecase.prototype = {
 			dataType: 'json',
 			contentType: 'application/json',
 			processData: false,
-			data: '{"path":"","recursive":true}',
+			data: '{"path":"","recursive":true, "include_deleted": true, "include_media_info": true}',
+			success: successCB,
+			error: errorCB
+		});
+	},
+
+
+	updateDir: function(successCB, errorCB) {
+		var $$=this;
+		if (errorCB==null) errorCB=this.errorCallback;
+		$.ajax({
+			url: "https://api.dropboxapi.com/2/files/list_folder/continue",
+			headers: {
+				"Authorization": "Bearer "+ $$.token
+			},
+			type: 'POST',
+			dataType: 'json',
+			contentType: 'application/json',
+			processData: false,
+			data: '{"cursor": "'+this.cursor+'"}'  ,
 			success: successCB,
 			error: errorCB
 		});
@@ -148,14 +176,20 @@ Notecase.prototype = {
 
     // Add / Remove notes
 	addNote: function(note) { return this.notesStore.add(note); },
-
+	removeNote: function(note) { return this.notesStore.remove(note); },
+    changeNoteStatus: function(key, status, integrity) {
+        var md = this.notesStore.get_metadata(key);
+        md.cache_status = status;
+        md.cache_integrity = integrity;
+    },
     // Search interface
-    getByPath: function(d,n) { return this.notesStore.getByPath(d,n); },
+    getByPath: function(p) { return this.notesStore.get_metadata(p); },
 
 	// Storage Interface
-	setContent: function(note, status, data) { return this.notesStore.setContent(note, status, data); },
-	getContent: function(id) { return this.notesStore.getContent(id); },
-	updateContent: function(id, field, value) { return this.notesStore.updateContent(id, field, value); }
+	putInCache: function(key, data, status, changed) { return this.notesStore.putInCache(key, data, status, changed); },
+	getFromCache: function(id) { return this.notesStore.getFromCache(id); },
+	updateCache: function(key, field, value) { return this.notesStore.updateCache(key, field, value); },
+	removeFromCache: function(id) { return this.notesStore.removeFromCache(id); }
 }
 
 var WaitCtrl = function() {
@@ -189,20 +223,46 @@ $(window).on("navigate", function (event, data) {
   }
 });
 
+
+function refreshData() {
+    waitCtrl.setState("on");
+	notecase.updateDir(function (data) {
+		waitCtrl.setState("off");
+		notecase.processFiles(data);
+	});
+}
+
 $(document).ready(function() {
 	simplemde = new SimpleMDE({
 		element: $("#noteview textarea")[0],
-		status: false,
-		toolbar: false
+		toolbar: [
+		    "bold", "italic", "horizontal-rule",
+		    "unordered-list", "ordered-list", "horizontal-rule", "quote"]
+		/*,	status: false, toolbar: false */
 	});
+
+    let c = localStorage.getItem("CURSOR");
+    if (c != undefined) notecase.cursor = JSON.parse(c);
+    if (notecase.cursor != undefined)
+        notecase.notesStore.deserialise(localStorage.getItem("NODE_STORE"));
+
 	waitCtrl.setState("on");
-	notecase.getDir(function (data) {
-		waitCtrl.setState("off");
-		notecase.processFiles(data);
-		selCtrl.fill({ selector: 0, path: "$ROOT", title: "Notecases Folders"});
-		var newState = jQuery.extend(true, {selector: 0, path: "$ROOT", title: "Notecases Folders"}, window.history.state);
-		window.history.replaceState(newState, "Notecases Folders");
-	});
+	if (notecase.cursor  == undefined)
+        notecase.getDir(function (data) {
+            waitCtrl.setState("off");
+            notecase.processFiles(data);
+            selCtrl.fill({ selector: 0, path: Utils.root, title: "Notecases Folders"});
+            var newState = jQuery.extend(true, {selector: 0, path: Utils.root, title: "Notecases Folders"}, window.history.state);
+            window.history.replaceState(newState, "Notecases Folders");
+        });
+    else
+        notecase.updateDir(function (data) {
+            waitCtrl.setState("off");
+            notecase.processFiles(data);
+            selCtrl.fill({ selector: 0, path: Utils.root, title: "Notecases Folders"});
+            var newState = jQuery.extend(true, {selector: 0, path: Utils.root, title: "Notecases Folders"}, window.history.state);
+            window.history.replaceState(newState, "Notecases Folders");
+        });
 
 	
 	$('#list-file > a').data('target','file');
@@ -222,4 +282,12 @@ $(document).ready(function() {
 	$(document).on("click", "#note-upload", function() { noteViewCtrl.onUpload() });
 	$(document).on("click", ".nc-new-note", function() { selCtrl.onNewNote() });
 	$(document).on("click", "#new-note .nc-ok", function() { selCtrl.onNewNoteCreate() });
+	$(document).on("submit", "#new-note form", function(e) { selCtrl.onNewNoteCreate(e); });
+	$(document).on("click", "#note-up", function() { noteViewCtrl.onUp() });
+
+	$(document).on("click", ".nc-refresh", function() { refreshData() });
+	$(document).on("click", ".nc-reset", function() {
+	    localStorage.clear();
+	    navigator.app.exitApp();
+	});
 });
